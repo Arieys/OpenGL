@@ -1,0 +1,59 @@
+#version 330 core
+
+in vec3 FragPos;  
+in vec2 TexCoord;
+in mat3 TBN;
+
+out vec4 FragColor;
+
+uniform vec3 m_ambient;
+uniform vec3 m_diffuse;
+uniform vec3 m_specular;
+float shininess=32;
+uniform vec3 v_position;
+uniform vec3 l_position;
+uniform vec3 l_ambient;
+uniform vec3 l_diffuse;
+uniform vec3 l_specular;
+uniform vec3 l_attenuation;
+uniform vec3 l_cutoff;
+
+uniform sampler2D diffuseMap;
+uniform sampler2D normalMap;
+
+vec3 calPointLighting(){
+
+     vec3 Normal = texture(normalMap,TexCoord).rgb;
+     Normal = normalize(Normal *2.0f -1.0f);
+     Normal = normalize(TBN*Normal);
+
+     vec3 color = texture(diffuseMap,TexCoord).rgb;
+	//ambient
+     vec3 ambient = color*0.1;
+     	
+	//diffuse
+     vec3 lightDir = normalize(l_position-FragPos);
+     float diff = max(dot(Normal, lightDir), 0.0); 
+     vec3 diffuse = diff*color;
+
+	//specular
+     vec3 viewDir = normalize(v_position-FragPos);
+     vec3 reflectDir = reflect(-lightDir, Normal);
+     vec3 halfwayDir = normalize(lightDir + viewDir);  
+     float spec = pow(max(dot(Normal, halfwayDir), 0.0), shininess);
+     vec3 specular = vec3(0.2) *spec;
+
+	//distance and attenuation
+     float d = length(l_position-FragPos);
+     float attenuation = 1.0/(l_attenuation.x+l_attenuation.y*d+l_attenuation.z*d*d);
+
+     return (ambient + diffuse+ specular) ;
+}
+
+
+void main()
+{
+    vec3 result = calPointLighting();
+    FragColor = vec4(result,1.0f);
+    //FragColor = vec4(texture(diffuseMap,TexCoord));
+} 
